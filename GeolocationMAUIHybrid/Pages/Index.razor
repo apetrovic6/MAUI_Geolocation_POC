@@ -1,0 +1,69 @@
+﻿@page "/"
+@using GeolocationUtils.Services.Interfaces;
+
+<h1>Hello, world!</h1>
+
+<div class="my-2">
+	<button class="btn btn-primary" @onclick="OnGetLocationOnce">Get location once</button>
+</div>
+
+<div class="my-2">
+	<button class="btn btn-primary" @onclick="OnStartService">Start service</button>
+</div>
+
+<div class="my-2">
+	<button class="btn btn-primary" @onclick="OnStopService">Stop service</button>
+</div>
+
+
+@code {
+	[Inject] IBackgroundService backgroundLocationService { get; set; }
+
+
+	private async void OnGetLocationOnce()
+	{
+		var _isCheckingLocation = true;
+		try
+		{
+
+			GeolocationRequest request = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
+
+			var _cancelTokenSource = new CancellationTokenSource();
+
+			Location location = await Geolocation.Default.GetLocationAsync(request, _cancelTokenSource.Token);
+
+			if (location != null)
+				Console.WriteLine($"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}");
+		}
+		// Catch one of the following exceptions:
+		//   FeatureNotSupportedException
+		//   FeatureNotEnabledException
+		//   PermissionException
+		catch (Exception ex)
+		{
+			// Unable to get location
+			Console.WriteLine(ex.Message);
+		}
+		finally
+		{
+			_isCheckingLocation = false;
+		}
+	}
+
+	private void OnStartService()
+	{
+		if (backgroundLocationService.IsServiceIsRunning())
+		{
+			App.Current.MainPage.DisplayAlert("Error", "Location service is already running", "Ok");
+		}
+		else
+		{
+			backgroundLocationService.Start();
+		}
+	}
+
+	private void OnStopService()
+	{
+		backgroundLocationService.Stop();
+	}
+}
